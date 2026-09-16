@@ -11,6 +11,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icon.svg" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/enhanced.css" />
   <title>QDTU Masofaviy Ta'lim</title>
 </head>
 <body>
@@ -34,7 +35,7 @@
       <div id="demoUsers" class="demo-users hidden">
         <button data-user="student" data-pass="Student@2026">Talaba</button>
         <button data-user="teacher" data-pass="Teacher@2026">O‘qituvchi</button>
-        <button data-user="admin" data-pass="Admin@2026">Admin</button>
+        <button data-user="admin" data-pass="">Admin</button>
       </div>
       <small class="auth-note">PWA · Low Data · Realtime · Mobile First</small>
     </section>
@@ -50,7 +51,10 @@
     <div class="main-shell">
       <header class="topbar">
         <div class="mobile-brand"><button id="menuBtn" class="icon-btn">☰</button><div class="brand-mark tiny">Q</div><b>QDTU EDU</b></div>
+        <div class="top-search desktop-only"><span>⌕</span><input id="topSearchInput" placeholder="Fan yoki topshiriq qidirish" readonly></div>
         <div class="top-actions">
+          <button id="searchBtn" class="icon-btn mobile-only" aria-label="Qidiruv">⌕</button>
+          <button id="notifBtn" class="icon-btn notif-btn" aria-label="Bildirishnomalar">♢<span id="notifDot" class="notif-dot hidden"></span></button>
           <button id="dataModeBtn" class="chip">⚡ Tejamkor</button>
           <button id="themeBtn" class="icon-btn" aria-label="Mavzu">◐</button>
           <button class="avatar" id="avatarBtn">T</button>
@@ -65,6 +69,8 @@
   <div id="modal" class="modal hidden"><div class="modal-card"><button id="modalClose" class="modal-close">×</button><div id="modalBody"></div></div></div>
 
   <script src="/socket.io/socket.io.js" defer></script>
-  <script src="/app.js" defer></script>
+  <script src="/core-v2.js" defer></script>
+  <script src="/pages-main.js" defer></script>
+  <script src="/pages-manage.js" defer></script>
 </body>
 </html>
