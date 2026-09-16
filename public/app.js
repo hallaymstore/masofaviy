@@ -1,0 +1,84 @@
+const $ = s => document.querySelector(s);
+const page = $('#page');
+const loginView = $('#loginView');
+const appView = $('#appView');
+const toastEl = $('#toast');
+let user = null, dashboard = null, current = 'home', deferredInstall = null, socket = null, mediaStream = null, lowData = localStorage.getItem('lowData') === '1';
+
+const icons = {home:'⌂',lessons:'▣',subjects:'◫',messages:'◌',profile:'◎',attendance:'✓',admin:'◈',users:'♙',schedule:'◷'};
+const labels = {home:'Bosh sahifa',lessons:'Darslar',subjects:'Fanlar',messages:'Xabarlar',profile:'Profil',attendance:'Davomat',admin:'Boshqaruv',users:'Foydalanuvchilar',schedule:'Jadval'};
+
+function showToast(msg){toastEl.textContent=msg;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),2200)}
+function api(url,opts={}){return fetch(url,{credentials:'include',headers:{'Content-Type':'application/json',...(opts.headers||{})},...opts}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'request_failed');return d})}
+function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+
+function navItems(){
+  const base=['home','lessons','subjects','messages','profile'];
+  if(user?.role==='teacher') return [...base.slice(0,4),'attendance','profile'];
+  if(['admin','rector','prorector','dean'].includes(user?.role)) return ['home','admin','schedule','users','profile'];
+  return base;
+}
+function renderNav(){
+  const items=navItems();
+  $('#sideNav').innerHTML=items.map(x=>`<button class="nav-link ${current===x?'active':''}" data-nav="${x}"><span class="nav-icon">${icons[x]}</span>${labels[x]}</button>`).join('');
+  const bottom=items.slice(0,5);
+  $('#bottomNav').innerHTML=bottom.map(x=>`<button class="${current===x?'active':''}" data-nav="${x}"><span>${icons[x]}</span>${labels[x]}</button>`).join('');
+  document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>go(b.dataset.nav));
+}
+async function go(name){current=name;renderNav();$('#sidebar').classList.remove('open');page.innerHTML='<div class="skeleton"></div><div class="skeleton" style="margin-top:12px"></div>';try{if(name==='home')await renderHome();else if(name==='lessons')renderLessons();else if(name==='subjects')renderSubjects();else if(name==='messages')renderMessages();else if(name==='profile')renderProfile();else if(name==='attendance')renderAttendance();else if(name==='admin')await renderAdmin();else if(name==='schedule')renderSchedule();else if(name==='users')renderUsers();}catch(e){page.innerHTML=`<div class="card"><b>Xatolik</b><p class="muted">${esc(e.message)}</p></div>`}}
+
+async function loadDashboard(){dashboard=await api('/api/dashboard')}
+async function renderHome(){
+  await loadDashboard();
+  const name=esc(user.name||user.sub||'Foydalanuvchi');
+  page.innerHTML=`<div class="page-head"><div><h1>Assalomu alaykum, ${name.split(' ')[0]} 👋</h1><p>${new Date().toLocaleDateString('uz-UZ',{weekday:'long',day:'numeric',month:'long'})}</p></div></div>
+  <section class="hero"><div><span class="eyebrow" style="color:#c7d2fe">Hozirgi dars</span><h2>${esc(dashboard.lessons[0]?.subject||'Bugun dars yo‘q')}</h2><p>${esc(dashboard.lessons[0]?.group||'')} · ${esc(dashboard.lessons[0]?.teacher||'')} · ${esc(dashboard.lessons[0]?.start||'')}–${esc(dashboard.lessons[0]?.end||'')}</p><div class="hero-actions"><button class="btn" id="joinLive">▶ Darsga kirish</button><button class="btn secondary" id="preflight">Internetni tekshirish</button></div></div><div class="hero-art"><div class="signal-orb">◉</div></div></section>
+  <div class="grid stats-grid">${stat('Bugungi dars',dashboard.stats.todayLessons)}${stat('Jonli',dashboard.stats.liveLessons)}${stat('Davomat',dashboard.stats.attendance+'%')}${stat('Vazifalar',dashboard.stats.pendingTasks)}</div>
+  <div class="grid two-col"><section class="card"><div class="card-title"><h3>Bugungi jadval</h3><button class="tab" id="allLessons">Barchasi</button></div><div class="lesson-list">${dashboard.lessons.map(lessonRow).join('')}</div></section><section class="card"><div class="card-title"><h3>E’lonlar</h3><span class="muted">Yangi</span></div>${dashboard.announcements.map(a=>`<div class="notice"><b>${esc(a.title)}</b><p>${esc(a.body)}</p></div>`).join('')}</section></div>`;
+  $('#joinLive')?.addEventListener('click',()=>openRoom(dashboard.lessons[0]));
+  $('#allLessons')?.addEventListener('click',()=>go('lessons'));
+  $('#preflight')?.addEventListener('click',preflight);
+}
+function stat(name,val){return `<div class="stat"><b>${esc(val)}</b><span>${esc(name)}</span></div>`}
+function lessonRow(l){return `<div class="lesson"><div class="lesson-time"><b>${esc(l.start)}</b>${esc(l.end)}</div><div><h4>${esc(l.subject)}</h4><p>${esc(l.group)} · ${esc(l.teacher)}</p></div><span class="status ${l.status==='live'?'live':'next'}">${l.status==='live'?'<i class="pulse"></i> Jonli':'Keyin'}</span></div>`}
+
+function renderLessons(){page.innerHTML=`<div class="page-head"><div><h1>Darslar</h1><p>Jadval va jonli darslar</p></div></div><div class="section-tabs"><button class="tab active">Bugun</button><button class="tab">Hafta</button><button class="tab">Tarix</button></div><section class="card" style="margin-top:12px"><div class="lesson-list">${(dashboard?.lessons||[]).map(l=>lessonRow(l).replace('</div><span','</div><button class="btn ghost" data-room="'+esc(l.id)+'">Kirish</button><span')).join('')}</div></section>`;document.querySelectorAll('[data-room]').forEach((b,i)=>b.onclick=()=>openRoom((dashboard?.lessons||[])[i]))}
+function renderSubjects(){const list=['Matematika','Axborot texnologiyalari','Iqtisodiyot','Chet tili','Mutaxassislik fani'];page.innerHTML=`<div class="page-head"><div><h1>Fanlar</h1><p>Materiallar, topshiriqlar va natijalar</p></div></div><div class="grid two-col">${list.map((x,i)=>`<section class="card"><div class="card-title"><h3>${x}</h3><span class="status next">${12+i} material</span></div><p class="muted">PDF · video · topshiriqlar · baholar</p><button class="btn ghost">Fanni ochish</button></section>`).join('')}</div>`}
+function renderMessages(){page.innerHTML=`<div class="page-head"><div><h1>Xabarlar</h1><p>O‘qituvchi va guruh suhbatlari</p></div></div><section class="card"><div class="notice"><b>MMT-520-25 guruhi</b><p>Bugungi dars 10:30 da boshlanadi.</p></div><div class="notice"><b>Matematika</b><p>Yangi topshiriq joylandi.</p></div><div class="notice"><b>Tyutor</b><p>Haftalik davomat bo‘yicha eslatma.</p></div></section>`}
+function renderProfile(){page.innerHTML=`<div class="page-head"><div><h1>Profil</h1><p>Shaxsiy sozlamalar</p></div></div><section class="card"><div class="brand"><div class="brand-mark">${esc((user.name||'U')[0])}</div><div><b>${esc(user.name||user.sub)}</b><span>${esc(user.role)}</span></div></div><div class="notice"><b>Tejamkor internet rejimi</b><p>${lowData?'Yoqilgan':'O‘chirilgan'} · past sifatli video va kamroq trafik.</p></div><div class="notice"><b>PWA</b><p>Platformani telefon bosh ekraniga o‘rnatish mumkin.</p></div><button id="installProfile" class="btn primary">Ilovani o‘rnatish</button></section>`;$('#installProfile').onclick=installPwa}
+function renderAttendance(){page.innerHTML=`<div class="page-head"><div><h1>Davomat</h1><p>Guruh kesimida real vaqt nazorati</p></div></div><div class="grid stats-grid">${stat('Bugun','92%')}${stat('Kechikkan',7)}${stat('Online',27)}${stat('Uzilgan',2)}</div><section class="card"><div class="lesson-list">${['Ali Karimov','Nodira Xolova','Aziz Ergashev','Mohira Tursunova'].map((n,i)=>`<div class="lesson"><div class="avatar">${n[0]}</div><div><h4>${n}</h4><p>10:${30+i} da kirdi · ${76-i*3} daqiqa</p></div><span class="status ${i===3?'next':'live'}">${i===3?'Kechikdi':'Qatnashdi'}</span></div>`).join('')}</div></section>`}
+async function renderAdmin(){const d=await api('/api/admin/overview');page.innerHTML=`<div class="page-head"><div><h1>Universitet boshqaruvi</h1><p>Real vaqt statistikasi</p></div></div><div class="grid stats-grid">${stat('Talabalar',d.stats.students)}${stat('O‘qituvchilar',d.stats.teachers)}${stat('Guruhlar',d.stats.groups)}${stat('Jonli dars',d.stats.liveLessons)}${stat('Online',d.stats.online)}${stat('Davomat',d.stats.attendance+'%')}${stat('Ogohlantirish',d.stats.alerts)}</div><div class="grid two-col"><section class="card"><div class="card-title"><h3>Monitoring</h3><span class="status live"><i class="pulse"></i> real-time</span></div><div class="notice"><b>RTC xizmat</b><p>SFU bridge tashqi UDP-capable serverga ulanishga tayyor.</p></div><div class="notice"><b>PWA va Low Data</b><p>Faol. Kuchsiz telefonlar uchun optimallashtirilgan.</p></div></section><section class="card"><div class="card-title"><h3>Tezkor amallar</h3></div><button class="btn ghost full">＋ Dars yaratish</button><button class="btn ghost full" style="margin-top:8px">＋ Foydalanuvchi</button><button class="btn ghost full" style="margin-top:8px">Hisobotni ko‘rish</button></section></div>`}
+function renderSchedule(){page.innerHTML=`<div class="page-head"><div><h1>Jadval</h1><p>Guruh va o‘qituvchi to‘qnashuvlarini nazorat qilish</p></div></div><section class="card"><div class="lesson-list">${(dashboard?.lessons||[]).map(lessonRow).join('')}</div></section>`}
+function renderUsers(){page.innerHTML=`<div class="page-head"><div><h1>Foydalanuvchilar</h1><p>Talaba, o‘qituvchi va boshqaruv rollari</p></div></div><section class="card"><div class="section-tabs"><button class="tab active">Talabalar</button><button class="tab">O‘qituvchilar</button><button class="tab">Rahbariyat</button></div><p class="muted">RBAC asosida ruxsatlar boshqariladi. Import va CRUD keyingi modulga tayyor.</p></section>`}
+
+async function preflight(){
+  const started=performance.now();
+  let media='tekshirilmadi';
+  try{const s=await navigator.mediaDevices.getUserMedia({audio:true,video:false});s.getTracks().forEach(t=>t.stop());media='mikrofon tayyor'}catch{media='ruxsat kerak'}
+  const latency=Math.round(performance.now()-started);
+  openModal(`<h3>Qurilma tekshiruvi</h3><div class="notice"><b>Internet</b><p>${navigator.onLine?'Ulangan':'Offline'} · ${latency} ms test</p></div><div class="notice"><b>Mikrofon</b><p>${media}</p></div><div class="notice"><b>Rejim</b><p>${lowData?'Tejamkor':'Standart'}</p></div>`)
+}
+async function openRoom(lesson={id:'L-1001',subject:'Jonli dars',group:'Guruh'}){
+  current='lessons';renderNav();
+  page.innerHTML=`<section class="room"><div class="room-head"><div class="room-title"><b>${esc(lesson.subject)}</b><span>${esc(lesson.group)} · ${esc(lesson.start||'')}</span></div><span class="status live"><i class="pulse"></i> Jonli</span></div><div class="room-stage"><div class="video-stage"><div class="teacher-placeholder"><div><div class="person">👨‍🏫</div><p>O‘qituvchi videosi SFU ulanganda shu yerda ko‘rinadi</p></div></div><div class="room-badge">⚡ ${lowData?'Tejamkor':'Auto sifat'}</div><div class="self-video"><video id="selfVideo" autoplay playsinline muted></video></div></div><aside class="room-panel"><div class="card-title"><h3>Suhbat</h3><span class="muted" id="roomOnline">27 online</span></div><div class="participants"><span class="person-chip">👨‍🏫 O‘qituvchi</span><span class="person-chip">👤 Siz</span></div><div id="chatLog" class="chat-log"><div class="msg"><b>Tizim</b><p>Dars xonasiga kirdingiz.</p></div></div><form id="chatForm" class="chat-send"><input id="chatInput" placeholder="Xabar..." maxlength="800"><button class="btn primary">➤</button></form></aside></div><div class="room-controls"><button id="micBtn" class="control on">🎤</button><button id="camBtn" class="control">📷</button><button id="handBtn" class="control">✋</button><button id="shareBtn" class="control">▣</button><button id="leaveBtn" class="control danger">×</button></div></section>`;
+  await api(`/api/lessons/${encodeURIComponent(lesson.id)}/attendance`,{method:'POST',body:JSON.stringify({event:'join',network:navigator.connection?.effectiveType||'unknown'})}).catch(()=>{});
+  connectSocket(lesson.id);
+  $('#camBtn').onclick=toggleCamera;$('#micBtn').onclick=toggleMic;$('#handBtn').onclick=()=>{socket?.emit('raise-hand',true);showToast('Qo‘l ko‘tarildi')};$('#shareBtn').onclick=shareScreen;$('#leaveBtn').onclick=()=>leaveRoom(lesson);$('#chatForm').onsubmit=e=>{e.preventDefault();const i=$('#chatInput');if(i.value.trim()){socket?.emit('chat:send',{text:i.value});i.value=''}};
+}
+function connectSocket(roomId){if(socket)socket.disconnect();socket=io();socket.on('connect',()=>socket.emit('room:join',roomId));socket.on('chat:message',m=>{const log=$('#chatLog');if(log){log.insertAdjacentHTML('beforeend',`<div class="msg"><b>${esc(m.user)}</b><p>${esc(m.text)}</p></div>`);log.scrollTop=log.scrollHeight}});socket.on('presence',p=>showToast(`${p.user} ${p.type==='join'?'kirdi':'chiqdi'}`))}
+async function toggleCamera(){const b=$('#camBtn');if(mediaStream?.getVideoTracks().length){mediaStream.getVideoTracks().forEach(t=>t.stop());mediaStream=null;$('#selfVideo').srcObject=null;b.classList.remove('on');return}try{mediaStream=await navigator.mediaDevices.getUserMedia({video:lowData?{width:{ideal:320},height:{ideal:240},frameRate:{ideal:12,max:15}}:{width:{ideal:640},height:{ideal:360},frameRate:{ideal:18,max:24}},audio:true});$('#selfVideo').srcObject=mediaStream;b.classList.add('on');$('#micBtn').classList.add('on')}catch(e){showToast('Kamera ruxsati berilmadi')}}
+function toggleMic(){const tracks=mediaStream?.getAudioTracks()||[];if(!tracks.length){navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{mediaStream=s;$('#micBtn').classList.add('on')}).catch(()=>showToast('Mikrofon ruxsati kerak'));return}tracks.forEach(t=>t.enabled=!t.enabled);$('#micBtn').classList.toggle('on',tracks[0].enabled)}
+async function shareScreen(){try{const s=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});showToast('Ekran ulashish boshlandi');s.getTracks()[0].onended=()=>showToast('Ekran ulashish tugadi')}catch{showToast('Ekran ulashish bekor qilindi')}}
+async function leaveRoom(lesson){mediaStream?.getTracks().forEach(t=>t.stop());mediaStream=null;socket?.disconnect();socket=null;await api(`/api/lessons/${encodeURIComponent(lesson.id)}/attendance`,{method:'POST',body:JSON.stringify({event:'leave'})}).catch(()=>{});go('home')}
+
+function openModal(html){$('#modalBody').innerHTML=html;$('#modal').classList.remove('hidden')}
+function updateMode(){document.body.classList.toggle('low-data',lowData);$('#dataModeBtn').classList.toggle('active',lowData);$('#dataModeBtn').textContent=lowData?'⚡ Tejamkor ON':'⚡ Tejamkor'}
+async function installPwa(){if(!deferredInstall){showToast('Brauzer menyusidan “Bosh ekranga qo‘shish”ni tanlang');return}deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null}
+
+$('#loginForm').onsubmit=async e=>{e.preventDefault();$('#loginError').textContent='';try{const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({username:$('#username').value,password:$('#password').value})});user=d.user;startApp()}catch{$('#loginError').textContent='Login yoki parol xato'}};
+$('#demoSwitch').onclick=()=>$('#demoUsers').classList.toggle('hidden');document.querySelectorAll('#demoUsers button').forEach(b=>b.onclick=()=>{$('#username').value=b.dataset.user;$('#password').value=b.dataset.pass;$('#demoUsers').classList.add('hidden')});
+$('#logoutBtn').onclick=async()=>{await api('/api/auth/logout',{method:'POST'}).catch(()=>{});location.reload()};$('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');$('#themeBtn').onclick=()=>{document.body.classList.toggle('dark');localStorage.setItem('theme',document.body.classList.contains('dark')?'dark':'light')};$('#dataModeBtn').onclick=()=>{lowData=!lowData;localStorage.setItem('lowData',lowData?'1':'0');updateMode();showToast(lowData?'Tejamkor rejim yoqildi':'Standart rejim yoqildi')};$('#modalClose').onclick=()=>$('#modal').classList.add('hidden');$('#modal').onclick=e=>{if(e.target===$('#modal'))$('#modal').classList.add('hidden')};
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installBtnSide').classList.remove('hidden')});$('#installBtnSide').onclick=installPwa;window.addEventListener('online',()=>{$('#offlineBar').classList.add('hidden');showToast('Internet qaytdi')});window.addEventListener('offline',()=>$('#offlineBar').classList.remove('hidden'));
+
+async function startApp(){loginView.classList.add('hidden');appView.classList.remove('hidden');$('#avatarBtn').textContent=(user.name||user.sub||'U')[0].toUpperCase();updateMode();await go('home')}
+(async()=>{if(localStorage.getItem('theme')==='dark')document.body.classList.add('dark');if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});try{const d=await api('/api/me');user={...d.user,username:d.user.sub};startApp()}catch{}})();
