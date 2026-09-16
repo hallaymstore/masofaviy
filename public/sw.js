@@ -1,4 +1,4 @@
-const CACHE='qdtu-edu-v4.1';
+const CACHE='qdtu-edu-v4.2';
 const STATIC=['/','/styles.css','/enhanced.css','/premium-v3.css','/v3-hotfix.css','/core-v2.js','/pages-main.js','/pages-manage.js','/hotfix-v2.js','/stability-guard.js','/premium-v3.js','/v3-hotfix.js','/access-v4.js','/manifest.webmanifest','/icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
