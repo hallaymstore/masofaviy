@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="description" content="Qarshi davlat texnika universiteti masofaviy ta'lim platformasi" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+  <title>QDTU Masofaviy Ta'lim</title>
+</head>
+<body>
+  <div id="offlineBar" class="offline-bar hidden">Internet uzildi · Offline rejim</div>
+
+  <main id="loginView" class="auth-shell">
+    <section class="auth-card">
+      <div class="brand brand-large"><div class="brand-mark">Q</div><div><b>QDTU EDU</b><span>Masofaviy ta'lim</span></div></div>
+      <div class="auth-copy">
+        <span class="eyebrow">Yangi avlod ta'lim platformasi</span>
+        <h1>Darsga kirish endi sodda.</h1>
+        <p>Telefon, planshet yoki kompyuterdan. Kuchsiz internetda ham audio-first rejim bilan.</p>
+      </div>
+      <form id="loginForm" class="form-stack">
+        <label>Login<input id="username" autocomplete="username" placeholder="Login" value="student" required /></label>
+        <label>Parol<input id="password" autocomplete="current-password" type="password" placeholder="Parol" value="Student@2026" required /></label>
+        <button class="btn primary full" type="submit">Kirish</button>
+        <div id="loginError" class="form-error"></div>
+      </form>
+      <button id="demoSwitch" class="btn ghost full" type="button">Demo rollarni ko‘rish</button>
+      <div id="demoUsers" class="demo-users hidden">
+        <button data-user="student" data-pass="Student@2026">Talaba</button>
+        <button data-user="teacher" data-pass="Teacher@2026">O‘qituvchi</button>
+        <button data-user="admin" data-pass="Admin@2026">Admin</button>
+      </div>
+      <small class="auth-note">PWA · Low Data · Realtime · Mobile First</small>
+    </section>
+  </main>
+
+  <div id="appView" class="app hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">Q</div><div><b>QDTU EDU</b><span>Masofaviy ta'lim</span></div></div>
+      <nav id="sideNav" class="side-nav"></nav>
+      <div class="side-footer"><button id="installBtnSide" class="btn ghost full hidden">＋ Ilovani o‘rnatish</button><button id="logoutBtn" class="btn danger-soft full">Chiqish</button></div>
+    </aside>
+
+    <div class="main-shell">
+      <header class="topbar">
+        <div class="mobile-brand"><button id="menuBtn" class="icon-btn">☰</button><div class="brand-mark tiny">Q</div><b>QDTU EDU</b></div>
+        <div class="top-actions">
+          <button id="dataModeBtn" class="chip">⚡ Tejamkor</button>
+          <button id="themeBtn" class="icon-btn" aria-label="Mavzu">◐</button>
+          <button class="avatar" id="avatarBtn">T</button>
+        </div>
+      </header>
+      <section id="page" class="page"></section>
+      <nav id="bottomNav" class="bottom-nav"></nav>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <div id="modal" class="modal hidden"><div class="modal-card"><button id="modalClose" class="modal-close">×</button><div id="modalBody"></div></div></div>
+
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/app.js" defer></script>
+</body>
+</html>
