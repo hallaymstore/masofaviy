@@ -1,14 +1,21 @@
 {
   "name": "qdtuedu-sfu",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "main": "server.js",
-  "scripts": {"start":"node server.js","test":"node selftest.js"},
+  "scripts": {
+    "start": "node server.js",
+    "test": "node selftest.js",
+    "test:e2e": "node e2e-browser.js"
+  },
   "engines": {"node": ">=20 <25"},
   "dependencies": {
+    "esbuild": "^0.25.10",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mediasoup": "^3.18.7",
+    "mediasoup-client": "^3.18.7",
+    "playwright": "^1.55.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   }
