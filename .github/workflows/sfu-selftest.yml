@@ -14,8 +14,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: sfu/package-lock.json
       - name: Install SFU dependencies
         working-directory: sfu
         run: npm install
