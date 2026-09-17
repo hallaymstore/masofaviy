@@ -1,0 +1,57 @@
+name: App Syntax
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.js'
+      - 'ops/*.sh'
+      - 'package.json'
+      - '.github/workflows/app-syntax.yml'
+  workflow_dispatch:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check server JavaScript
+        run: |
+          node --check server-v2.js
+          node --check rtc-session-runtime.js
+          node --check lesson-status-runtime.js
+          node --check compliance-runtime.js
+          node --check recording-runtime.js
+          node --check education-routes.js
+          node --check admin-routes.js
+          node --check schedule-import-routes.js
+          node --check student-import-routes.js
+          node --check video-routes.js
+          node --check caption-routes.js
+      - name: Check frontend JavaScript
+        run: |
+          node --check public/core-v2.js
+          node --check public/pages-main.js
+          node --check public/pages-manage.js
+          node --check public/access-v4.js
+          node --check public/v5-learning.js
+          node --check public/v5-classroom.js
+          node --check public/v5-nav.js
+          node --check public/compliance-v5.js
+          node --check public/assessment-v5.js
+          node --check public/recording-v5.js
+          node --check public/sw.js
+      - name: Check SFU JavaScript
+        run: |
+          node --check sfu/server-v2.js
+          node --check sfu/selftest.js
+          node --check sfu/e2e-browser.js
+      - name: Check deployment scripts
+        run: |
+          bash -n ops/bootstrap-env.sh
+          bash -n ops/deploy-university.sh
+          bash -n ops/verify-production.sh
+          bash -n ops/run-all.sh
