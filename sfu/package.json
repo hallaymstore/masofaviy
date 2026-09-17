@@ -1,13 +1,15 @@
 {
   "name": "qdtuedu-sfu",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "main": "server.js",
-  "scripts": {"start":"node server.js"},
+  "scripts": {"start":"node server.js","test":"node selftest.js"},
   "engines": {"node": ">=20 <25"},
   "dependencies": {
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
     "mediasoup": "^3.18.7",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   }
 }
