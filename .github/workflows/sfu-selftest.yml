@@ -8,7 +8,7 @@ on:
 jobs:
   test-sfu:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,6 +17,12 @@ jobs:
       - name: Install SFU dependencies
         working-directory: sfu
         run: npm install
-      - name: Run SFU selftest
+      - name: Run SFU signalling selftest
         working-directory: sfu
         run: npm test
+      - name: Install Chromium
+        working-directory: sfu
+        run: npx playwright install --with-deps chromium
+      - name: Run teacher to student browser video E2E
+        working-directory: sfu
+        run: npm run test:e2e
