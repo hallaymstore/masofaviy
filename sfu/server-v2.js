@@ -47,6 +47,7 @@ async function getRoom(roomId){
   rooms.set(roomId,room);return room;
 }
 function ensurePeer(room,socket){
+  if(!room)throw new Error('room_not_joined');
   if(!room.peers.has(socket.id))room.peers.set(socket.id,{id:socket.id,user:socket.user,transports:new Map(),producers:new Map(),consumers:new Map(),joinedAt:Date.now()});
   return room.peers.get(socket.id);
 }
@@ -84,8 +85,10 @@ io.on('connection',socket=>{
       const peer=ensurePeer(room,socket),transport=await room.router.createWebRtcTransport({webRtcServer:room.webRtcServer,enableUdp:true,enableTcp:true,preferUdp:true,initialAvailableOutgoingBitrate:direction==='send'?800000:1400000,enableSctp:true,numSctpStreams:{OS:256,MIS:256}});
       try{await transport.setMaxIncomingBitrate(socket.user.role==='teacher'?1800000:700000)}catch{}
       peer.transports.set(transport.id,transport);
-      transport.on('dtlsstatechange',state=>{if(state==='closed')transport.close()});
-      transport.on('icestatechange',state=>{if(state==='disconnected')socket.emit('rtc:warning',{type:'ice_disconnected'})});
+      const dropTransport=()=>peer.transports.delete(transport.id);
+      transport.on('dtlsstatechange',state=>{if(state==='closed'){dropTransport();try{transport.close()}catch{}}});
+      transport.on('icestatechange',state=>{if(state==='disconnected')socket.emit('rtc:warning',{type:'ice_disconnected'});if(state==='closed'||state==='failed'){dropTransport();try{transport.close()}catch{}}});
+      transport.on('close',dropTransport);
       cb({ok:true,params:serializeTransport(transport)});
     }catch(e){cb({ok:false,error:e.message})}
   });
@@ -97,23 +100,32 @@ io.on('connection',socket=>{
       const room=rooms.get(socket.data.roomId),peer=ensurePeer(room,socket),transport=peer.transports.get(transportId);if(!transport)throw new Error('transport_not_found');
       const source=['mic','camera','screen'].includes(appData?.source)?appData.source:(kind==='audio'?'mic':'camera');
       if(source==='screen'&&socket.user.role!=='teacher')throw new Error('screen_share_teacher_only');
-      for(const p of peer.producers.values())if(p.appData?.source===source)throw new Error('source_already_produced');
+      for(const p of peer.producers.values())if(p.appData?.source===source&&!p.closed)throw new Error('source_already_produced');
       const safeAppData={source,username:socket.user.sub,name:socket.user.name,role:socket.user.role,group:socket.user.group||'',mode:socket.user.mode};
       const producer=await transport.produce({kind,rtpParameters,appData:safeAppData});peer.producers.set(producer.id,producer);
-      producer.on('transportclose',()=>peer.producers.delete(producer.id));producer.on('close',()=>peer.producers.delete(producer.id));
+      const dropProducer=()=>peer.producers.delete(producer.id);
+      producer.on('transportclose',dropProducer);producer.on('close',dropProducer);
       socket.to(room.id).emit('producer:new',{producerId:producer.id,peerId:socket.id,kind:producer.kind,appData:safeAppData});
       cb({ok:true,id:producer.id});
     }catch(e){cb({ok:false,error:e.message})}
   });
+  socket.on('producer:close',async({producerId}={},cb=()=>{})=>{
+    try{
+      const room=rooms.get(socket.data.roomId),peer=ensurePeer(room,socket),producer=peer.producers.get(String(producerId||''));
+      if(!producer)throw new Error('producer_not_found');
+      peer.producers.delete(producer.id);try{producer.close()}catch{}
+      cb({ok:true});
+    }catch(e){cb({ok:false,error:e.message})}
+  });
   socket.on('producers:list',({excludeSelf=true}={},cb=()=>{})=>{
-    try{const room=rooms.get(socket.data.roomId);if(!room)throw new Error('room_not_joined');const out=[];for(const[peerId,peer]of room.peers){if(excludeSelf&&peerId===socket.id)continue;for(const producer of peer.producers.values())out.push({producerId:producer.id,peerId,kind:producer.kind,appData:producer.appData})}cb({ok:true,producers:out})}catch(e){cb({ok:false,error:e.message})}
+    try{const room=rooms.get(socket.data.roomId);if(!room)throw new Error('room_not_joined');const out=[];for(const[peerId,peer]of room.peers){if(excludeSelf&&peerId===socket.id)continue;for(const producer of peer.producers.values())if(!producer.closed)out.push({producerId:producer.id,peerId,kind:producer.kind,appData:producer.appData})}cb({ok:true,producers:out})}catch(e){cb({ok:false,error:e.message})}
   });
   socket.on('consume',async({transportId,producerId,rtpCapabilities}={},cb=()=>{})=>{
-    try{const room=rooms.get(socket.data.roomId),peer=ensurePeer(room,socket),transport=peer.transports.get(transportId);if(!transport)throw new Error('transport_not_found');if(!room.router.canConsume({producerId,rtpCapabilities}))throw new Error('cannot_consume');const consumer=await transport.consume({producerId,rtpCapabilities,paused:true});peer.consumers.set(consumer.id,consumer);consumer.on('transportclose',()=>peer.consumers.delete(consumer.id));consumer.on('producerclose',()=>{peer.consumers.delete(consumer.id);socket.emit('consumer:closed',{consumerId:consumer.id,producerId})});cb({ok:true,params:{id:consumer.id,producerId,kind:consumer.kind,rtpParameters:consumer.rtpParameters,type:consumer.type,producerPaused:consumer.producerPaused}})}catch(e){cb({ok:false,error:e.message})}
+    try{const room=rooms.get(socket.data.roomId),peer=ensurePeer(room,socket),transport=peer.transports.get(transportId);if(!transport)throw new Error('transport_not_found');if(!room.router.canConsume({producerId,rtpCapabilities}))throw new Error('cannot_consume');const consumer=await transport.consume({producerId,rtpCapabilities,paused:true});peer.consumers.set(consumer.id,consumer);const dropConsumer=()=>peer.consumers.delete(consumer.id);consumer.on('transportclose',dropConsumer);consumer.on('producerclose',()=>{dropConsumer();socket.emit('consumer:closed',{consumerId:consumer.id,producerId})});consumer.on('close',dropConsumer);cb({ok:true,params:{id:consumer.id,producerId,kind:consumer.kind,rtpParameters:consumer.rtpParameters,type:consumer.type,producerPaused:consumer.producerPaused}})}catch(e){cb({ok:false,error:e.message})}
   });
   socket.on('consumer:resume',async({consumerId}={},cb=()=>{})=>{try{const room=rooms.get(socket.data.roomId),peer=ensurePeer(room,socket),consumer=peer.consumers.get(consumerId);if(!consumer)throw new Error('consumer_not_found');await consumer.resume();cb({ok:true})}catch(e){cb({ok:false,error:e.message})}});
   socket.on('stats:get',(_,cb=()=>{})=>{const room=rooms.get(socket.data.roomId);cb(room?{ok:true,...roomStats(room)}:{ok:false,error:'room_not_joined'})});
-  socket.on('disconnect',async()=>{const room=rooms.get(socket.data.roomId);if(room){await cleanupPeer(room,socket.id);socket.to(room.id).emit('peer:left',{peerId:socket.id})}});
+  socket.on('disconnect',async()=>{const room=rooms.get(socket.data.roomId);if(room){const roomId=room.id;await cleanupPeer(room,socket.id);socket.to(roomId).emit('peer:left',{peerId:socket.id})}});
 });
 
 (async()=>{await createWorkers();server.listen(HTTP_PORT,'0.0.0.0',()=>console.log(`QDTU SFU v2 signalling=${HTTP_PORT}, workers=${workers.length}, rtc=${RTC_BASE_PORT}..${RTC_BASE_PORT+workers.length-1}`))})().catch(err=>{console.error(err);process.exit(1)});
