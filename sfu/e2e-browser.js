@@ -14,7 +14,7 @@ let sfu,webServer,browser;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 async function waitHealth(){for(let i=0;i<50;i++){try{const r=await fetch(`http://127.0.0.1:${SFU_PORT}/health`);if(r.ok)return r.json()}catch{}await sleep(300)}throw new Error('sfu_health_timeout')}
-function token(role,sub){return jwt.sign({roomId:ROOM,sub,name:role==='teacher'?'Teacher E2E':'Student E2E',role,group:'E2E-GROUP',teacherUsername:'teacher-e2e'},SECRET,{expiresIn:'10m',issuer:'qdtuedu-web'})}
+function token(role,sub){return jwt.sign({roomId:ROOM,sub,name:role==='teacher'?'Teacher E2E':'Student E2E',role,group:'E2E-GROUP',lessonGroup:'E2E-GROUP',mode:role==='teacher'?'host':'participant'},SECRET,{expiresIn:'10m',issuer:'qdtu-edu',audience:'qdtu-sfu'})}
 
 const pageHtml=`<!doctype html><meta charset="utf-8"><title>QDTU SFU E2E</title>
 <video id="remote" autoplay playsinline muted></video><canvas id="source" width="320" height="180"></canvas>
@@ -32,7 +32,7 @@ const ack=(s,e,p)=>new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(
   send.on('connect',({dtlsParameters},ok,bad)=>ack(socket,'transport:connect',{transportId:send.id,dtlsParameters}).then(ok).catch(bad));
   send.on('produce',({kind,rtpParameters,appData},ok,bad)=>ack(socket,'produce',{transportId:send.id,kind,rtpParameters,appData}).then(r=>ok({id:r.id})).catch(bad));
   const c=document.getElementById('source'),x=c.getContext('2d');let n=0;setInterval(()=>{n++;x.fillStyle='hsl('+n%360+' 80% 45%)';x.fillRect(0,0,320,180);x.fillStyle='white';x.font='28px sans-serif';x.fillText('QDTU '+n,55,95)},50);
-  const track=c.captureStream(15).getVideoTracks()[0];const p=await send.produce({track,encodings:[{maxBitrate:350000}],appData:{source:'camera',role:'teacher',name:'Teacher E2E',username:'teacher-e2e'}});window.E2E.producerId=p.id;window.E2E.ready=true;
+  const track=c.captureStream(15).getVideoTracks()[0];const p=await send.produce({track,encodings:[{maxBitrate:350000}],appData:{source:'camera'}});window.E2E.producerId=p.id;window.E2E.ready=true;
  }else{
   const tr=await ack(socket,'transport:create',{direction:'recv'});const recv=device.createRecvTransport(tr.params);
   recv.on('connect',({dtlsParameters},ok,bad)=>ack(socket,'transport:connect',{transportId:recv.id,dtlsParameters}).then(ok).catch(bad));
@@ -46,7 +46,7 @@ const ack=(s,e,p)=>new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(
 
 (async()=>{try{
  await esbuild.build({stdin:{contents:"import {Device} from 'mediasoup-client';window.MediasoupDevice=Device;",resolveDir:__dirname},bundle:true,minify:true,platform:'browser',format:'iife',outfile:bundle});
- sfu=spawn(process.execPath,[path.join(__dirname,'server.js')],{env:{...process.env,SFU_HTTP_PORT:String(SFU_PORT),SFU_RTC_PORT:String(RTC_PORT),SFU_ANNOUNCED_IP:'127.0.0.1',SFU_TOKEN_SECRET:SECRET,SFU_WORKERS:'1',SFU_LOG_LEVEL:'error'},stdio:['ignore','pipe','pipe']});sfu.stdout.on('data',d=>process.stdout.write(d));sfu.stderr.on('data',d=>process.stderr.write(d));await waitHealth();
+ sfu=spawn(process.execPath,[path.join(__dirname,'server-v2.js')],{env:{...process.env,SFU_HTTP_PORT:String(SFU_PORT),SFU_RTC_PORT:String(RTC_PORT),SFU_ANNOUNCED_IP:'127.0.0.1',RTC_TOKEN_SECRET:SECRET,SFU_WORKERS:'1',SFU_LOG_LEVEL:'error'},stdio:['ignore','pipe','pipe']});sfu.stdout.on('data',d=>process.stdout.write(d));sfu.stderr.on('data',d=>process.stderr.write(d));await waitHealth();
  const app=express();app.get('/mediasoup-client.js',(req,res)=>res.sendFile(bundle));app.get('/test',(req,res)=>res.type('html').send(pageHtml));webServer=await new Promise(resolve=>{const s=app.listen(WEB_PORT,'127.0.0.1',()=>resolve(s))});
  browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required','--no-sandbox']});const tctx=await browser.newContext(),teacher=await tctx.newPage();teacher.on('console',m=>console.log('teacher:',m.text()));await teacher.goto(`http://127.0.0.1:${WEB_PORT}/test?mode=teacher&token=${encodeURIComponent(token('teacher','teacher-e2e'))}`);await teacher.waitForFunction(()=>window.E2E.ready||window.E2E.error,{timeout:20000});const tr=await teacher.evaluate(()=>window.E2E);if(tr.error)throw new Error('teacher_'+tr.error);
  const sctx=await browser.newContext(),student=await sctx.newPage();student.on('console',m=>console.log('student:',m.text()));await student.goto(`http://127.0.0.1:${WEB_PORT}/test?mode=student&token=${encodeURIComponent(token('student','student-e2e'))}`);await student.waitForFunction(()=>window.E2E.ready||window.E2E.error,{timeout:25000});const sr=await student.evaluate(()=>window.E2E);if(sr.error)throw new Error('student_'+sr.error);if(Number(sr.bytes)<1500)throw new Error('insufficient_rtp_bytes');console.log('SFU_BROWSER_E2E_PASS',{producerId:tr.producerId,videoBytes:sr.bytes});process.exitCode=0;
