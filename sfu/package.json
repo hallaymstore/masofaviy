@@ -1,10 +1,10 @@
 {
   "name": "qdtuedu-sfu",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
-  "main": "server.js",
+  "main": "server-v2.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server-v2.js",
     "test": "node selftest.js",
     "test:e2e": "node e2e-browser.js"
   },
