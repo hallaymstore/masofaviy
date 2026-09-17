@@ -1,4 +1,4 @@
-const CACHE='qdtu-edu-v5.0';
+const CACHE='qdtu-edu-v5.1';
 const STATIC=['/','/styles.css','/enhanced.css','/premium-v3.css','/v3-hotfix.css','/v5.css','/core-v2.js','/pages-main.js','/pages-manage.js','/hotfix-v2.js','/stability-guard.js','/premium-v3.js','/v3-hotfix.js','/access-v4.js','/v5-learning.js','/v5-classroom.js','/v5-nav.js','/vendor/mediasoup-client.js','/manifest.webmanifest','/icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
