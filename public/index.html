@@ -12,6 +12,7 @@
   <link rel="icon" href="/icon.svg" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/enhanced.css" />
+  <link rel="stylesheet" href="/premium-icons.css" />
   <link rel="stylesheet" href="/premium-v3.css" />
   <link rel="stylesheet" href="/v3-hotfix.css" />
   <link rel="stylesheet" href="/v5.css" />
@@ -31,14 +32,15 @@
     </section>
   </main>
   <div id="appView" class="app hidden">
-    <aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark">Q</div><div><b>QDTU EDU</b><span>Masofaviy ta'lim</span></div></div><nav id="sideNav" class="side-nav"></nav><div class="side-footer"><button id="installBtnSide" class="btn ghost full hidden">＋ Ilovani o‘rnatish</button><button id="logoutBtn" class="btn danger-soft full">Chiqish</button></div></aside>
+    <aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark">Q</div><div><b>QDTU EDU</b><span>Masofaviy ta'lim</span></div></div><nav id="sideNav" class="side-nav"></nav><div class="side-footer"><button id="installBtnSide" class="btn ghost full hidden"><span data-pi="plus" data-pi-fallback="＋">＋</span> Ilovani o‘rnatish</button><button id="logoutBtn" class="btn danger-soft full">Chiqish</button></div></aside>
     <div class="main-shell">
-      <header class="topbar"><div class="mobile-brand"><button id="menuBtn" class="icon-btn">☰</button><div class="brand-mark tiny">Q</div><b>QDTU EDU</b></div><div class="top-search desktop-only"><span>⌕</span><input id="topSearchInput" placeholder="Fan yoki topshiriq qidirish" readonly></div><div class="top-actions"><button id="searchBtn" class="icon-btn mobile-only" aria-label="Qidiruv">⌕</button><button id="notifBtn" class="icon-btn notif-btn" aria-label="Bildirishnomalar">♢<span id="notifDot" class="notif-dot hidden"></span></button><button id="dataModeBtn" class="chip">⚡ Tejamkor</button><button id="themeBtn" class="icon-btn" aria-label="Mavzu">◐</button><button class="avatar" id="avatarBtn">T</button></div></header>
+      <header class="topbar"><div class="mobile-brand"><button id="menuBtn" class="icon-btn" data-pi="menu" data-pi-fallback="☰" aria-label="Menyu">☰</button><div class="brand-mark tiny">Q</div><b>QDTU EDU</b></div><div class="top-search desktop-only"><span data-pi="search" data-pi-fallback="⌕">⌕</span><input id="topSearchInput" placeholder="Fan yoki topshiriq qidirish" readonly></div><div class="top-actions"><button id="searchBtn" class="icon-btn mobile-only" data-pi="search" data-pi-fallback="⌕" aria-label="Qidiruv">⌕</button><button id="notifBtn" class="icon-btn notif-btn" aria-label="Bildirishnomalar"><span data-pi="bell" data-pi-fallback="🔔">🔔</span><span id="notifDot" class="notif-dot hidden"></span></button><button id="dataModeBtn" class="chip"><span data-pi="bolt" data-pi-fallback="⚡">⚡</span> Tejamkor</button><button id="themeBtn" class="icon-btn" data-pi="theme" data-pi-fallback="◐" aria-label="Mavzu">◐</button><button class="avatar" id="avatarBtn">T</button></div></header>
       <section id="page" class="page"></section><nav id="bottomNav" class="bottom-nav"></nav>
     </div>
   </div>
-  <div id="toast" class="toast"></div><div id="modal" class="modal hidden"><div class="modal-card"><button id="modalClose" class="modal-close">×</button><div id="modalBody"></div></div></div>
+  <div id="toast" class="toast"></div><div id="modal" class="modal hidden"><div class="modal-card"><button id="modalClose" class="modal-close" data-pi="close" data-pi-fallback="×" aria-label="Yopish">×</button><div id="modalBody"></div></div></div>
   <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/premium-icons.js" defer></script>
   <script src="/core-v2.js" defer></script>
   <script src="/pages-main.js" defer></script>
   <script src="/pages-manage.js" defer></script>
