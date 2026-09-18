@@ -10,13 +10,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icon.svg" />
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/enhanced.css" />
-  <link rel="stylesheet" href="/premium-icons.css" />
-  <link rel="stylesheet" href="/premium-v3.css" />
-  <link rel="stylesheet" href="/v3-hotfix.css" />
-  <link rel="stylesheet" href="/v5.css" />
-  <link rel="stylesheet" href="/compliance-v5.css" />\n  <link rel="stylesheet" href="/v6-ai-inclusive.css" />
+  <link rel="stylesheet" href="/styles.css?v=6.0.2" />
+  <link rel="stylesheet" href="/enhanced.css?v=6.0.2" />
+  <link rel="stylesheet" href="/premium-icons.css?v=6.0.2" />
+  <link rel="stylesheet" href="/premium-v3.css?v=6.0.2" />
+  <link rel="stylesheet" href="/v3-hotfix.css?v=6.0.2" />
+  <link rel="stylesheet" href="/v5.css?v=6.0.2" />
+  <link rel="stylesheet" href="/compliance-v5.css?v=6.0.2" />
+<link rel="stylesheet" href="/v6-ai-inclusive.css?v=6.0.2" />
   <title>QDTU Masofaviy Ta'lim</title>
 </head>
 <body>
@@ -39,21 +40,40 @@
     </div>
   </div>
   <div id="toast" class="toast"></div><div id="modal" class="modal hidden"><div class="modal-card"><button id="modalClose" class="modal-close" data-pi="close" data-pi-fallback="×" aria-label="Yopish">×</button><div id="modalBody"></div></div></div>
-  <script src="/socket.io/socket.io.js" defer></script>
-  <script src="/premium-icons.js" defer></script>
-  <script src="/core-v2.js" defer></script>
-  <script src="/pages-main.js" defer></script>
-  <script src="/pages-manage.js" defer></script>
-  <script src="/hotfix-v2.js" defer></script>
-  <script src="/stability-guard.js" defer></script>
-  <script src="/premium-v3.js" defer></script>
-  <script src="/v3-hotfix.js" defer></script>
-  <script src="/access-v4.js" defer></script>
-  <script src="/v5-learning.js" defer></script>
-  <script src="/v5-classroom.js" defer></script>
-  <script src="/v5-nav.js" defer></script>
-  <script src="/compliance-v5.js" defer></script>
-  <script src="/assessment-v5.js" defer></script>
-  <script src="/recording-v5.js" defer></script>\n  <script src="/v6-ai-pages.js" defer></script>\n  <script src="/v6-ai-extra.js" defer></script>\n  <script src="/v6-accessibility.js" defer></script>\n  <script src="/v6-classroom-enhance.js" defer></script>
+  <script src="/socket.io/socket.io.js?v=6.0.2" defer></script>
+  <script src="/premium-icons.js?v=6.0.2" defer></script>
+  <script src="/core-v2.js?v=6.0.2" defer></script>
+  <script src="/pages-main.js?v=6.0.2" defer></script>
+  <script src="/pages-manage.js?v=6.0.2" defer></script>
+  <script src="/hotfix-v2.js?v=6.0.2" defer></script>
+  <script src="/stability-guard.js?v=6.0.2" defer></script>
+  <script src="/premium-v3.js?v=6.0.2" defer></script>
+  <script src="/v3-hotfix.js?v=6.0.2" defer></script>
+  <script src="/access-v4.js?v=6.0.2" defer></script>
+  <script src="/v5-learning.js?v=6.0.2" defer></script>
+  <script src="/v5-classroom.js?v=6.0.2" defer></script>
+  <script src="/v5-nav.js?v=6.0.2" defer></script>
+  <script src="/compliance-v5.js?v=6.0.2" defer></script>
+  <script src="/assessment-v5.js?v=6.0.2" defer></script>
+  <script src="/recording-v5.js?v=6.0.2" defer></script>
+<script src="/v6-ai-pages.js?v=6.0.2" defer></script>
+<script src="/v6-ai-extra.js?v=6.0.2" defer></script>
+<script src="/v6-accessibility.js?v=6.0.2" defer></script>
+<script src="/v6-classroom-enhance.js?v=6.0.2" defer></script>
+  <script id="shellRecoveryV602">
+  window.addEventListener('load',()=>{
+    setTimeout(()=>{
+      const app=document.getElementById('appView'), page=document.getElementById('page');
+      if(app && !app.classList.contains('hidden') && page && !page.textContent.trim()){
+        try{ window.EDU?.go?.('home'); }catch(e){}
+        setTimeout(()=>{
+          if(page && !page.textContent.trim()){
+            page.innerHTML='<section class="card"><b>Sahifa tiklanmoqda...</b><p class="muted">Brauzer keshini yangilash uchun sahifani bir marta qayta yuklang.</p><button class="btn primary" onclick="location.reload()">Qayta yuklash</button></section>';
+          }
+        },1800);
+      }
+    },1200);
+  });
+  </script>
 </body>
 </html>
