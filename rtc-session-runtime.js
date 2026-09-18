@@ -47,8 +47,9 @@ function parseIceServers(){
   const out=[];
   const stun=String(process.env.STUN_URLS||'').split(/[;,\n]/).map(x=>x.trim()).filter(Boolean);
   if(stun.length)out.push({urls:stun});
-  const turn=String(process.env.TURN_URLS||'').split(/[;\n]/).map(x=>x.trim()).filter(Boolean);
-  if(turn.length&&process.env.TURN_USERNAME&&process.env.TURN_CREDENTIAL)out.push({urls:turn,username:process.env.TURN_USERNAME,credential:process.env.TURN_CREDENTIAL});
+  const turn=String(process.env.TURN_URLS||process.env.TURN_URL||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+  const credential=process.env.TURN_CREDENTIAL||process.env.TURN_PASSWORD||'';
+  if(turn.length&&process.env.TURN_USERNAME&&credential)out.push({urls:turn,username:process.env.TURN_USERNAME,credential});
   return out;
 }
 function allowed(user,lesson){
