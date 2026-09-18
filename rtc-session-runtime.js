@@ -40,16 +40,28 @@ async function getDb(){
   })();
   try{return await connecting}finally{connecting=null}
 }
-function parseIceServers(){
+function parseIceServers(identity='qdtu'){
   if(process.env.RTC_ICE_SERVERS_JSON){
     try{const v=JSON.parse(process.env.RTC_ICE_SERVERS_JSON);if(Array.isArray(v))return v}catch(e){console.warn('[rtc-runtime] invalid RTC_ICE_SERVERS_JSON')}
   }
-  const out=[];
-  const stun=String(process.env.STUN_URLS||'').split(/[;,\n]/).map(x=>x.trim()).filter(Boolean);
-  if(stun.length)out.push({urls:stun});
-  const turn=String(process.env.TURN_URLS||process.env.TURN_URL||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+  const defaultStun=['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302','stun:stun2.l.google.com:19302'];
+  const customStun=String(process.env.STUN_URLS||'').split(/[;,\n]/).map(x=>x.trim()).filter(Boolean);
+  const out=[{urls:[...new Set(customStun.concat(defaultStun))]}];
+  const allTurn=String(process.env.TURN_URLS||process.env.TURN_URL||'').split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean);
+  const turn=[...new Set(allTurn)].slice(0,Math.max(1,Number(process.env.TURN_MAX_URLS||8)));
+  if(!turn.length)return out;
+  const secret=String(process.env.EXPRESSTURN_SECRET_KEY||process.env.EXPRESS_TURN_SECRET_KEY||process.env.TURN_SECRET||'').trim();
+  if(secret){
+    const ttl=Math.max(300,Math.min(86400,Number(process.env.TURN_TTL_SECONDS||21600)));
+    const expiry=Math.floor(Date.now()/1000)+ttl;
+    const label=String(identity||'qdtu').replace(/[^a-z0-9._-]/gi,'').slice(0,48)||'qdtu';
+    const username=`${expiry}:${label}`;
+    const credential=crypto.createHmac('sha1',secret).update(username).digest('base64');
+    out.push({urls:turn,username,credential});
+    return out;
+  }
   const credential=process.env.TURN_CREDENTIAL||process.env.TURN_PASSWORD||'';
-  if(turn.length&&process.env.TURN_USERNAME&&credential)out.push({urls:turn,username:process.env.TURN_USERNAME,credential});
+  if(process.env.TURN_USERNAME&&credential)out.push({urls:turn,username:process.env.TURN_USERNAME,credential});
   return out;
 }
 function allowed(user,lesson){
@@ -80,12 +92,12 @@ function installRtcRoutes(app){
       const rtcSecret=process.env.RTC_TOKEN_SECRET||process.env.JWT_SECRET;
       const rtcToken=jwt.sign({sub:user.username,name:user.name,role:user.role,group:user.group||'',roomId:lesson.id,lessonGroup:lesson.group||'',mode:mode(user,lesson)},rtcSecret,{expiresIn:'10m',audience:'qdtu-sfu',issuer:'qdtu-edu'});
       res.set('Cache-Control','no-store');
-      res.json({ok:true,bridgeUrl,token:rtcToken,roomId:lesson.id,mode:mode(user,lesson),iceServers:parseIceServers(),defaults:{mic:user.role==='teacher',cam:user.role==='teacher'},expiresIn:600});
+      res.json({ok:true,bridgeUrl,token:rtcToken,roomId:lesson.id,mode:mode(user,lesson),iceServers:parseIceServers(user.username),defaults:{mic:user.role==='teacher',cam:user.role==='teacher'},expiresIn:600});
     }catch(e){console.error('[rtc-session]',e.message);res.status(500).json({ok:false,error:'rtc_session_failed'})}
   });
   app.get('/api/rtc/diagnostics',async(req,res)=>{
     res.set('Cache-Control','no-store');
-    res.json({ok:true,bridgeConfigured:Boolean(process.env.RTC_BRIDGE_URL),turnConfigured:Boolean(process.env.TURN_URLS&&process.env.TURN_USERNAME&&process.env.TURN_CREDENTIAL),tokenAuth:true,groupIsolation:true,defaults:{student:{mic:false,cam:false},teacher:{mic:true,cam:true}}});
+    res.json({ok:true,bridgeConfigured:Boolean(process.env.RTC_BRIDGE_URL),turnConfigured:Boolean((process.env.TURN_URLS||process.env.TURN_URL)&&(process.env.EXPRESSTURN_SECRET_KEY||process.env.EXPRESS_TURN_SECRET_KEY||process.env.TURN_SECRET||(process.env.TURN_USERNAME&&(process.env.TURN_CREDENTIAL||process.env.TURN_PASSWORD)))),ephemeralTurn:Boolean(process.env.EXPRESSTURN_SECRET_KEY||process.env.EXPRESS_TURN_SECRET_KEY||process.env.TURN_SECRET),tokenAuth:true,groupIsolation:true,defaults:{student:{mic:false,cam:false},teacher:{mic:true,cam:true}}});
   });
 }
 function wrappedExpress(...args){const app=originalExpress(...args);installRtcRoutes(app);return app}
