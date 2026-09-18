@@ -1,12 +1,12 @@
 {
   "name": "qdtuedu-masofaviy",
-  "version": "4.3.0",
+  "version": "5.0.0",
   "private": true,
   "description": "Qarshi davlat texnika universiteti masofaviy ta'lim platformasi",
   "main": "server-v2.js",
   "scripts": {
-    "start": "node -r ./rtc-session-runtime.js -r ./lesson-status-runtime.js -r ./compliance-runtime.js -r ./recording-runtime.js server-v2.js",
-    "dev": "node --watch -r ./rtc-session-runtime.js -r ./lesson-status-runtime.js -r ./compliance-runtime.js -r ./recording-runtime.js server-v2.js",
+    "start": "node -r ./rtc-session-runtime.js -r ./ai-inclusive-runtime.js -r ./lesson-status-runtime.js -r ./compliance-runtime.js -r ./recording-runtime.js server-v2.js",
+    "dev": "node --watch -r ./rtc-session-runtime.js -r ./ai-inclusive-runtime.js -r ./lesson-status-runtime.js -r ./compliance-runtime.js -r ./recording-runtime.js server-v2.js",
     "build:rtc": "mkdir -p public/vendor && esbuild rtc-client-entry.js --bundle --minify --platform=browser --format=iife --outfile=public/vendor/mediasoup-client.js",
     "postinstall": "npm run build:rtc"
   },
