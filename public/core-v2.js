@@ -19,7 +19,7 @@ function errorText(e){const m=e?.message||'Xatolik';return({required:'Majburiy m
 function openModal(html,wide=false){$('#modalBody').innerHTML=html;$('#modal').classList.remove('hidden');$('#modal').querySelector('.modal-card')?.classList.toggle('wide',wide)}
 function closeModal(){$('#modal').classList.add('hidden');$('#modalBody').innerHTML=''}
 function initSocket(){if(state.socket?.connected)return state.socket;state.socket=io({transports:['websocket','polling']});state.socket.on('connect_error',()=>{});state.socket.on('announcement:new',()=>toast('Yangi e’lon qo‘shildi'));state.socket.on('schedule:changed',()=>{if(['home','lessons','schedule'].includes(state.current))setTimeout(()=>go(state.current),250)});return state.socket}
-async function showApp(u){state.user=u;loginView.classList.add('hidden');appView.classList.remove('hidden');$('#avatarBtn').textContent=(u.name||u.username||'U').trim().charAt(0).toUpperCase();renderNav();initSocket();await go('home')}
+async function showApp(u){state.user=u;loginView.classList.add('hidden');appView.classList.remove('hidden');$('#avatarBtn').textContent=(u.name||u.username||'U').trim().charAt(0).toUpperCase();renderNav();try{initSocket()}catch(e){console.warn('Socket init failed; continuing UI',e)}await go('home')}
 function showLogin(){state.user=null;appView.classList.add('hidden');loginView.classList.remove('hidden')}
 async function logout(call=true){try{if(call)await api('/api/auth/logout',{method:'POST'})}catch{}state.socket?.disconnect();state.socket=null;showLogin()}
 async function restore(){try{state.config=await fetch('/api/config').then(r=>r.json()).catch(()=>null);const d=await api('/api/me');await showApp(d.user)}catch{showLogin()}}
