@@ -105,3 +105,5 @@ Object.assign(wrappedExpress,originalExpress);
 require.cache[expressPath].exports=wrappedExpress;
 
 process.on('SIGTERM',()=>mongoClient?.close().catch(()=>{}));
+
+process.nextTick(()=>console.log('[rtc-runtime] bridge='+Boolean(process.env.RTC_BRIDGE_URL)+' turn='+Boolean(process.env.TURN_URLS||process.env.TURN_URL)+' ephemeralTurn='+Boolean(process.env.EXPRESSTURN_SECRET_KEY||process.env.EXPRESS_TURN_SECRET_KEY||process.env.TURN_SECRET)));
