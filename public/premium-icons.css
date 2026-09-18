@@ -1,0 +1,15 @@
+.pi{display:inline-flex;align-items:center;justify-content:center;width:1.15em;height:1.15em;vertical-align:-.18em;flex:0 0 auto}
+.pi-svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.pi-emoji{display:none;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.legacy-icons .pi-svg{display:none!important}
+.legacy-icons .pi-emoji{display:inline-flex!important;align-items:center;justify-content:center}
+.nav-icon .pi,.bottom-nav .pi{width:18px;height:18px}
+.icon-btn .pi{width:18px;height:18px}
+.btn .pi,.chip .pi,.badge .pi,.quality-pill .pi{width:1.05em;height:1.05em;margin-right:.28em}
+.btn.icon-only .pi,.icon-btn .pi,.classroom-controls-v5 .pi,.room-controls .pi{margin-right:0}
+.classroom-controls-v5 .pi,.room-controls .pi{width:20px;height:20px}
+.participant-chip-v5 .pi,.person-chip .pi{width:14px;height:14px}
+.empty-icon .pi{width:28px;height:28px}
+.teacher-placeholder .pi,.teacher-wait-icon .pi{width:42px;height:42px}
+.video-play-v5 .pi,.video-play .pi{width:20px;height:20px}
+[data-pi]{display:inline-flex;align-items:center;justify-content:center}
